@@ -44,7 +44,7 @@ Raw 16S rRNA sequencing reads and raw mass-spectrometry files are not distribute
 
 - **16S rRNA gene sequencing**: The European Nucleotide Archive (ENA) under study accession PRJEB126088 and will be made publicly available upon publication.
 - **Proteomics**: the ProteomeXchange/PRIDE accession and public download page will be added upon publication.
-- **Processed matrices, metadata, and publication-ready tables**: •	Any additional information required to reanalyze the data reported in the associated publication is available from the lead contact upon request.
+- **Processed matrices, metadata, and publication-ready tables**: •	Requests for further information and resources should be directed to the lead contact, Karine Ricaud (karine.brugirardricaud@univ-pau.fr)
 
 Until publication, this repository remains private and the data are available only to authorised collaborators.
 
