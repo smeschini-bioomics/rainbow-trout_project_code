@@ -1,0 +1,33 @@
+(qiime2-amplicon-2024.10)
+System versions
+Python version: 3.10.14
+QIIME 2 release: 2024.10
+QIIME 2 version: 2024.10.1
+q2cli version: 2024.10.1
+
+Installed plugins
+alignment: 2024.10.0
+composition: 2024.10.0
+cutadapt: 2024.10.0
+dada2: 2024.10.0
+deblur: 2024.10.0
+demux: 2024.10.0
+diversity: 2024.10.0
+diversity-lib: 2024.10.0
+emperor: 2024.10.0
+evident: 0.4.0
+feature-classifier: 2024.10.0
+feature-table: 2024.10.0
+fragment-insertion: 2024.10.0
+longitudinal: 2024.10.0
+metadata: 2024.10.0
+phylogeny: 2024.10.0
+quality-control: 2024.10.0
+quality-filter: 2024.10.0
+rescript: 2024.10.0
+sample-classifier: 2024.10.0
+stats: 0+unknown
+taxa: 2024.10.0
+types: 2024.10.0
+vizard: 0.0.1.dev0
+vsearch: 2024.10.0

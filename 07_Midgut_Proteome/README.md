@@ -1,0 +1,440 @@
+# Midgut proteome
+
+## Purpose
+
+This module analyses midgut data-independent acquisition (DIA) LC–MS/MS proteomics data quantified with DIA-NN. It performs MS-DAP quality control and protein-level differential-abundance analysis, derives an analysis-ready sample-by-protein matrix, scores pathway activity with GSVA, assesses technical batch structure, generates a limma batch-corrected matrix for profile-level analyses, and evaluates multivariate proteome structure.
+
+The workflow contains three distinct analytical branches:
+
+- **Protein-level differential abundance:** MS-DAP analyses seven prespecified HC-versus-NC contrasts independently, one contrast per sampling day.
+- **Pathway-level analysis:** GSVA converts the filtered protein matrix into sample-level GO, KEGG, and Reactome pathway scores; Biological Process scores are subsequently modelled across diet and day.
+- **Global proteome structure:** batch exploration, limma correction, PCA, PERMANOVA, dispersion tests, and PC-score comparisons are performed on the filtered protein matrix or its batch-corrected derivative.
+
+## Sample fractionation and LC–MS/MS analysis
+
+Midgut samples were processed and analysed by [ProGenTomics](https://www.progentomics.ugent.be/), Ghent, Belgium.
+
+The proteome and hPTM datasets were generated from sequential fractions of the same midgut extraction workflow. Following acid addition for histone extraction and centrifugation, the acid-soluble fraction was used for histone PTM analysis. The remaining acid-insoluble pellet was retained for DIA proteomics.
+
+Thus, this proteome dataset represents proteins recovered from the non-histone, acid-insoluble fraction rather than from the acid extract used for the hPTM analysis. The proteome and hPTM measurements are complementary molecular readouts derived from sequential fractions of the same biological sample.
+
+## Directory layout
+
+- `01_input_files/` — FASTA database and MS-DAP sample metadata.
+- `01_MSDAP_DEA/` — timestamped MS-DAP QC reports, abundance tables, differential-abundance results, and the saved `dataset.RData` object.
+- `02_DEA_results/` — summary dot plot of significant proteins by day, direction, and DEA algorithm.
+- `03_DEA_statistic/` — sample, protein, contrast, contaminant, and differential-abundance count tables.
+- `rds/` — filtered sample-by-protein matrix for downstream analyses.
+- `05_gsva/` — GSVA score matrices, pathway metadata, long-format scores, and session information.
+- `06_gsva_bp_heatmaps/` — Biological Process GSVA heatmaps.
+- `07_batch_effect_exploration/` — initial technical-batch assessment.
+- `08_batch_correction_limma/` — batch-balance tables, before/after correction diagnostics, and the corrected matrix.
+- `09_PCA_PERMANOVA/` — diet, phase, diet-by-phase, and day-level multivariate outputs.
+
+Run scripts from `07_Midgut_Proteome/` so relative paths resolve correctly.
+
+## Inputs and external resources
+
+### DIA-NN report and FASTA database
+
+The first script requires:
+
+```text
+report.tsv
+01_input_files/UP193380_110924_HaoUnivContam.fasta
+```
+
+`report.tsv` is the DIA-NN quantitative report and is not committed because of its size. It will be deposited in an external public repository before publication; the accession and download link will be added in the public release.
+
+The FASTA file must be the same protein database used for the upstream DIA-NN search, because MS-DAP imports this database to map peptides and proteins.
+
+### MS-DAP sample metadata
+
+MS-DAP uses:
+
+```text
+01_input_files/metadata.xlsx
+```
+
+The `group` column must contain the exact labels used in the seven contrasts:
+
+```text
+NC_day_01, HC_day_01
+NC_day_02, HC_day_02
+NC_day_03, HC_day_03
+NC_day_04, HC_day_04
+NC_day_10, HC_day_10
+NC_day_15, HC_day_15
+NC_day_22, HC_day_22
+```
+
+Additional technical columns can be retained in this file for MS-DAP QC reporting.
+
+The MS-DAP workflow, documentation, and example analyses are available in the [MS-DAP GitHub repository](https://github.com/ftwkoopmans/msdap).
+
+### Experiment-level metadata
+
+All downstream scripts use:
+
+```text
+STPN2309_metadata_all.tsv
+```
+
+Relevant fields include:
+
+| Use | Required metadata field(s) |
+|---|---|
+| Map MS-DAP sample labels to project IDs | `sampleID_proteomics_gut` |
+| Initial batch exploration | `sample_id`, `diet`, `day_categ`, `rearing_tank`, `gut_proteome_batch` |
+| limma correction and final multivariate analyses | `sampleID_STPN2309`, `diet`, `day_categ`, `gut_proteome_batch` |
+| Additional PCA/PERMANOVA groupings | `phase`, `diet_phase` |
+
+### STRING functional annotations
+
+GSVA requires the external STRING v12 rainbow trout enrichment annotation file:
+
+```text
+110079946.protein.enrichment.terms.v12.0.txt
+```
+
+This large external resource is not versioned. Download it from the [STRING v12 rainbow trout organism page](https://version-12-0.string-db.org/organism/STRG0A55HWH) and place it in this module directory.
+
+## Script order
+
+1. `01_MSDAP_DEA.R` — imports the DIA-NN report, FASTA database, and MS-DAP metadata; runs MS-DAP QC, filtering, normalisation, abundance-table export, and protein-level differential abundance.
+2. `02_DEA_results.R` — creates the cross-day, multi-algorithm dot plot of significant proteins.
+3. `03_DEA_statistic.R` — exports sample, protein, contaminant, contrast, and significant-protein count tables.
+4. `04_process_matrix.R` — converts the MS-DAP global protein-abundance table to a filtered sample-by-protein matrix aligned to project metadata.
+5. `05_gsva.R` — builds STRING-derived pathway gene sets and calculates sample-level GSVA scores.
+6. `06_gsva_bp_heatmaps.R` — fits diet-by-day contrasts for GO Biological Process GSVA scores, accounting for surrogate variables, and generates pathway heatmaps.
+7. `07_batch_effect_exploration.R` — evaluates technical batch, diet, day, rearing-tank, and allocation structure before correction.
+8. `08_batch_correction_limma.R` — generates a limma batch-corrected protein matrix while protecting the `diet * day_categ` biological design.
+9. `09_PCA_PERMANOVA.R` — performs PCA, PERMANOVA, dispersion testing, and PC-score comparisons using the corrected matrix.
+
+Scripts 02–04 contain hard-coded paths to the timestamped MS-DAP output folder generated by script 01. After rerunning MS-DAP, update these paths to the newly created timestamped directory before continuing.
+
+## 1. MS-DAP quality control and protein-level differential abundance
+
+`01_MSDAP_DEA.R` imports the DIA-NN report with `msdap::import_dataset_diann()`, imports the search FASTA database, reads the completed MS-DAP sample metadata, and defines the seven within-day contrasts:
+
+```text
+NC_day_X versus HC_day_X
+```
+
+for days 1, 2, 3, 4, 10, 15, and 22.
+
+### Contrast-specific filtering and normalisation
+
+MS-DAP is run with:
+
+```r
+filter_by_contrast = TRUE
+```
+
+Therefore, peptide filtering and normalisation are performed separately within the subset of samples relevant to each HC-versus-NC day-specific contrast. This improves contrast-specific use of quantitative evidence but means that the set of proteins evaluated can differ across days and DEA algorithms.
+
+The configured peptide/protein requirements are:
+
+```r
+filter_min_detect          = 3
+filter_fraction_detect     = 0.5
+filter_min_quant           = 3
+filter_fraction_quant      = 0.5
+filter_min_peptide_per_prot = 1
+```
+
+Thus, within each contrast, a peptide must meet detection and quantification requirements in at least three replicates and at least 50% of samples per group. Proteins require at least one retained peptide for differential-abundance testing.
+
+Normalisation is applied sequentially:
+
+```r
+norm_algorithm = c("vsn", "modebetween_protein")
+```
+
+This applies variance-stabilising normalisation followed by MS-DAP's protein-level mode-between-groups normalisation.
+
+### Differential-abundance algorithms
+
+Five DEA algorithms are run independently:
+
+```text
+deqms
+ebayes
+msempire
+msqrobsum
+msqrob
+```
+
+The MS-DAP workflow uses:
+
+```r
+dea_qvalue_threshold          = 0.05
+dea_log2foldchange_threshold  = NA
+```
+
+A q-value below 0.05 defines significant proteins in MS-DAP output summaries. With `dea_log2foldchange_threshold = NA`, MS-DAP applies its automatic bootstrap-derived fold-change thresholding behaviour rather than a fixed user-defined effect-size threshold.
+
+The workflow also enables the MS-DAP QC report, protein/peptide abundance-table export, differential-detection settings, and uses up to two cores:
+
+```r
+output_qc_report = TRUE
+output_abundance_tables = TRUE
+multiprocessing_maxcores = 2
+```
+
+The timestamped MS-DAP output folder contains the saved `dataset.RData`, QC report, abundance tables, filtering/normalisation outputs, and algorithm-specific DEA results.
+
+## 2. Differential-abundance summaries
+
+### Significant-protein dot plot
+
+`02_DEA_results.R` reads the saved MS-DAP `dataset.RData` object and extracts protein-level results.
+
+For every algorithm and day, proteins are classified as:
+
+- `HC > NC` when `qvalue < 0.05` and `foldchange.log2 > 0`;
+- `HC < NC` when `qvalue < 0.05` and `foldchange.log2 < 0`.
+
+It then creates a faceted dot plot in which:
+
+- columns represent sampling days;
+- rows represent DEA algorithms;
+- dot size and labels represent the number of significant proteins;
+- colour represents direction of the HC-versus-NC change.
+
+The script exports the plot as PDF, TIFF, and RDS. It does not write a separate significant-protein table; the source results remain in the MS-DAP `dataset.RData` object.
+
+### Sample and protein accounting
+
+`03_DEA_statistic.R` exports transparent summaries of:
+
+- retained and excluded samples by diet and day;
+- total retained HC, NC, and overall sample counts;
+- proteins tested per contrast and DEA algorithm;
+- contaminant proteins;
+- proteins with finite q-values;
+- significant proteins overall and by HC-versus-NC direction;
+- day-level minimum, median, and maximum results across the five algorithms;
+- global protein counts before and after contaminant exclusion.
+
+This script provides reporting tables only; it does not refit DEA models.
+
+## 3. Filtered matrix for GSVA and profile-level analyses
+
+`04_process_matrix.R` reads the MS-DAP global protein-abundance table from the selected timestamped output directory.
+
+The script:
+
+1. uses protein IDs as row names;
+2. removes FASTA-header and gene-symbol annotation columns;
+3. removes proteins whose IDs contain `Cont_`;
+4. transposes the matrix to `samples × proteins`;
+5. maps MS-DAP sample labels to project sample IDs through `sampleID_proteomics_gut`;
+6. excludes proteins with more than 30% missing values.
+
+No imputation is performed in this script. The resulting matrix retains remaining missing values for methods that can accommodate them or for method-specific imputation later in the workflow.
+
+The filtered matrix is saved as:
+
+```text
+rds/midgut_proteome_filtered.rds
+```
+
+The values are the MS-DAP-exported, normalised protein abundances. They should not be interpreted as raw DIA-NN intensities.
+
+## 4. GSVA pathway scoring
+
+`05_gsva.R` calculates sample-level gene-set variation analysis scores from the filtered protein matrix.
+
+### Annotation and protein mapping
+
+The matrix is transposed to `proteins × samples`, as required by GSVA. Text after the first semicolon in each protein identifier is removed. The script stops if this creates duplicated protein IDs.
+
+STRING protein identifiers are stripped of their organism prefix and matched to the protein IDs in the matrix. Proteins are retained for GSVA only when they occur in at least one of the following STRING annotation classes:
+
+- Gene Ontology Biological Process;
+- Gene Ontology Molecular Function;
+- Gene Ontology Cellular Component;
+- KEGG;
+- Reactome.
+
+### Gene-set construction and GSVA settings
+
+Pathways are retained when they contain between 5 and 500 proteins represented in the proteome matrix.
+
+GSVA uses:
+
+```r
+kcdf   = "Gaussian"
+minSize = 5
+maxSize = 500
+use    = "na.rm"
+maxDiff = TRUE
+```
+
+This is appropriate for the continuous normalised protein-abundance matrix.
+
+The script exports:
+
+```text
+05_gsva/sample_geneterms_matrix.rds
+05_gsva/sample_geneterms_matrix_fullnames.rds
+05_gsva/GSVA_scores_long.tsv
+```
+
+Both identifier-based and descriptive pathway-name matrix objects are retained. The long-format score table is joined to diet, continuous day, categorical day, rearing tank, biological group, temporal phase, and diet-by-phase metadata.
+
+GSVA was performed following the Bioconductor GSVA workflow and package documentation: [GSVA vignette](https://bioconductor.org/packages/devel/bioc/vignettes/GSVA/inst/doc/GSVA.html).
+
+
+## 5. Biological Process GSVA modelling and heatmaps
+
+`06_gsva_bp_heatmaps.R` focuses on GO Biological Process GSVA scores.
+
+### Surrogate-variable adjustment and limma model
+
+To estimate latent technical variation, the script runs `sva()` with a main-effects model:
+
+```r
+~ diet + day_categ
+```
+
+The full limma model then retains the interaction:
+
+```r
+~ diet * day_categ + surrogate variables
+```
+
+Seven HC-versus-NC contrasts are constructed, one for each sampling day. Pathway-level p-values are adjusted by limma using the Benjamini–Hochberg method.
+
+### Heatmap selection
+
+For the first contrast heatmap, the script retains up to:
+
+```text
+three HC-enriched and three HC-depleted significant pathways per day
+```
+
+using `FDR < 0.05`. The heatmap displays the HC-minus-NC GSVA-score effect and annotates FDR significance with stars.
+
+A second sample-level heatmap includes the union of GO Biological Process pathways significant in at least one day-specific contrast. Surrogate-variable effects are removed from these GSVA scores for visualisation only, while the full diet-by-day design is retained.
+
+The script writes heatmap figures and session information. In its current form, it does **not** export the complete limma contrast table or selected-pathway table; retain or add an explicit export if those tabular results are required for downstream reporting.
+
+## 6. Technical-batch exploration
+
+`07_batch_effect_exploration.R` evaluates `gut_proteome_batch` before correction.
+
+For PCA and distance-based diagnostics, it removes proteins with one or fewer observed values or near-zero variance, median-imputes residual missing values feature-wise, and performs PCA on centred/scaled protein profiles.
+
+It produces PCA panels with marginal densities coloured by:
+
+- diet;
+- sampling day;
+- rearing tank;
+- gut proteome batch.
+
+The script then performs Euclidean-distance analyses on feature-wise standardised profiles:
+
+1. unadjusted batch PERMANOVA;
+2. multivariate dispersion testing with `betadisper` and 9,999 permutations;
+3. marginal PERMANOVA for:
+
+   ```r
+   diet + day_categ + gut_proteome_batch
+   ```
+
+4. permutation chi-square tests for batch-by-day and batch-by-`Diet × Day` allocation;
+5. a rank check for:
+
+   ```r
+   ~ gut_proteome_batch + diet * day_categ
+   ```
+
+The resulting report documents whether the batch-adjusted biological model is full rank and therefore estimable without exact confounding. This stage is exploratory and does not itself modify the matrix.
+
+## 7. limma batch correction
+
+`08_batch_correction_limma.R` creates a batch-adjusted matrix for profile-level analyses.
+
+The script:
+
+1. aligns the filtered proteome matrix to metadata using `sampleID_STPN2309`;
+2. retains NC and HC samples;
+3. removes proteins with one or fewer observed values or near-zero variance;
+4. exports batch-by-diet and batch-by-day balance tables;
+5. applies `limma::removeBatchEffect()` using `gut_proteome_batch` while protecting:
+
+   ```r
+   ~ diet * day_categ
+   ```
+
+6. evaluates PCA before and after correction;
+7. tests associations of PC1 and PC2 with batch, diet, and day by one-way ANOVA;
+8. tests feature-level batch effects before and after correction using:
+
+   ```r
+   protein ~ diet * day_categ + gut_proteome_batch
+   ```
+
+   with BH adjustment across proteins;
+9. compares overall HC-minus-NC protein mean differences before and after correction.
+
+The RDS output contains the original matrix, corrected matrix, aligned metadata, PCA objects and scores, feature-level batch checks, and before/after HC-minus-NC effect checks:
+
+```text
+08_batch_correction_limma/midgut_proteome_filtered_batch_corrected_limma.rds
+```
+
+This correction is not used for MS-DAP protein-level DEA or GSVA. As currently configured, it is the direct input to `09_PCA_PERMANOVA.R`.
+
+## 8. PCA, PERMANOVA, and dispersion testing
+
+`09_PCA_PERMANOVA.R` reads:
+
+```text
+08_batch_correction_limma/midgut_proteome_filtered_batch_corrected_limma.rds
+```
+
+and uses the `proteome_batch_corrected_limma` matrix.
+
+Proteins are z-scored across samples. Missing values are then replaced by zero, corresponding to the protein mean on the z-score scale, solely because PCA and Euclidean distances require a complete matrix. No z-score cap is applied in the current configuration.
+
+### Diet analysis
+
+For NC versus HC, the script performs:
+
+- Euclidean-distance PERMANOVA with 9,999 permutations;
+- multivariate dispersion testing with `betadisper` and 9,999 permutations;
+- PCA of the z-scored matrix;
+- PC1/PC2 Wilcoxon rank-sum tests, with BH correction across the two axes;
+- PCA plots with marginal PC1/PC2 densities and PC-score violin/box/jitter plots.
+
+### Additional metadata groupings
+
+The same analysis framework is then applied to:
+
+- temporal phase;
+- diet-by-temporal phase;
+- sampling day.
+
+For two-level groups, PC-score comparisons use Wilcoxon rank-sum tests. For groups with more than two levels, Kruskal–Wallis tests are used. In each grouping, PC1 and PC2 p-values are BH-adjusted together.
+
+Temporal phase is defined in the metadata as early (days 1–4) and late (days 10, 15, and 22).
+
+## Main outputs
+
+- `01_MSDAP_DEA/<timestamp>/` — MS-DAP QC report, filtering/normalisation outputs, peptide/protein abundance tables, DEA results, and `dataset.RData`.
+- `02_DEA_results/dea_dotplot_qvalue.pdf` and `.tiff` — significant-protein count plot across days and algorithms.
+- `03_DEA_statistic/` — sample-size, exclusion, contrast, contaminant, and protein-summary CSV files.
+- `rds/midgut_proteome_filtered.rds` — filtered `samples × proteins` matrix.
+- `05_gsva/` — GSVA RDS objects, long-format pathway scores, and session information.
+- `06_gsva_bp_heatmaps/` — top-pathway HC-minus-NC contrast heatmap and sample-by-pathway heatmap.
+- `07_batch_effect_exploration/` — PCA panels and batch-effect assessment report.
+- `08_batch_correction_limma/` — batch-balance tables, corrected matrix, PCA before/after correction, feature-level batch diagnostics, and biological-effect preservation checks.
+- `09_PCA_PERMANOVA/` — PERMANOVA, dispersion, PCA, PC-score, and additional-grouping outputs.
+
+## Main R packages
+
+Core packages are `msdap`, `data.table`, `dplyr`, `tidyr`, `stringr`, `readr`, `GSVA`, `limma`, `sva`, `mixOmics`, `vegan`, `ComplexHeatmap`, `circlize`, `ggplot2`, `ggExtra`, `patchwork`, `RColorBrewer`, and `grid`.
+
