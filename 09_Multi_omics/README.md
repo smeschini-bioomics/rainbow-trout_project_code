@@ -4,7 +4,7 @@
 
 This module integrates six molecular datasets from independent rainbow trout sampled after exposure to the NC or HC diet at days 1, 2, 3, 4, 10, 15, and 22.
 
-The integration method is **MOFA2** (Multi-Omics Factor Analysis). MOFA learns latent factors: continuous sample-level axes that capture coordinated variation across multiple omics layers. Each factor is interpreted jointly from:
+The integration method is **MOFA2** (Multi-Omics Factor Analysis).
 
 - its sample scores;
 - variance explained in each omics view;
@@ -46,7 +46,7 @@ Host physiological traits and global liver cytosine-composition variables are **
 7. `06_b_mofa_overview.R` — generates the combined MOFA overview figure and reusable source tables.
 8. `07_MultiPower.R` — retrospective MultiGroupPower analysis for the seven day-specific HC-versus-NC comparisons.
 
-Scripts 02 and 03 both require the processed input matrices, but script 03 is an independent QC workflow: it does not overwrite `views.rds` or alter the model inputs produced by script 02.
+Scripts 02 and 03 both require the processed input matrices, but script 03 is an independent QC workflow
 
 ## 1. Assembly of metadata and non-view covariates
 
@@ -134,14 +134,6 @@ For each view, it reports:
 - the number of features retained after QC z-scoring;
 - feature-variance ranks and cumulative variance distributions.
 
-It exports:
-
-```text
-QC_views/tables/omics_view_dimensions_original.csv
-QC_views/tables/zscore_feature_filtering_report.csv
-QC_views/tables/feature_level_QC_original_vs_zscore.csv
-QC_views/tables/variance_rank_original_vs_zscore.csv
-```
 
 PDF figures compare original versus z-scored distributions, feature standard deviations, and cumulative variance concentration.
 
@@ -178,12 +170,11 @@ The random seed and HDF5 output name are intentionally placeholders in the templ
 The final downstream scripts currently reload:
 
 ```text
-mofa_models/K20_setseed_42.hdf5
+mofa_models/K20_setseed_123.hdf5
 ```
 
 Thus, all interpretation figures and enrichment analyses must use the same selected model file unless the input model path is changed deliberately.
 
-Although `views.rds` has already been feature-wise z-scored, `scale_views = TRUE` is also retained in the MOFA2 configuration so that the fitted model applies its configured view scaling.
 
 ## 5. Model comparison
 
@@ -245,11 +236,8 @@ and displays the associations as a log-p-value heatmap.
 
 It also creates targeted visualisations for:
 
-- Factor 3 scores by day and diet;
-- Factor 2 versus Factor 3, coloured by diet and shaped by temporal phase;
 - UMAP calculated from all model factors, coloured by diet and shaped by temporal phase;
-- factor-specific heatmaps for Factor 3 across the six views;
-- top positive and negative feature weights for Factor 3 in each view.
+- top positive and negative feature weights for selected factors in each view.
 
 Protein labels used in interpretation plots are added only after model fitting. The original MOFA feature names are not changed.
 
@@ -263,14 +251,6 @@ The sign of a MOFA factor is arbitrary: an equivalent model may reverse both fac
 - **Panel A:** sample availability across the six views;
 - **Panel B:** total variance explained per view;
 - **Panel C:** factor-wise variance explained across views.
-
-It writes PDF and 1200 dpi TIFF versions of the tagged and untagged figure, together with reusable source tables:
-
-```text
-mofa_results/tables/MOFA_view_N_and_D_summary.csv
-mofa_results/tables/MOFA_total_R2_per_view.csv
-mofa_results/tables/MOFA_factor_R2_per_view.csv
-```
 
 These tables are the preferred source for reporting the final number of available samples (`N`) and retained features (`D`) per view, because they are calculated directly from the selected model.
 
