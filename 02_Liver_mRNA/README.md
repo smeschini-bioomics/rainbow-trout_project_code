@@ -4,33 +4,6 @@
 
 This module analyses targeted liver mRNA relative-concentration measurements across dietary treatment and sampling day. It produces gene-specific descriptive and inferential outputs, a supplementary multi-panel figure for selected glycolytic and gluconeogenic targets, observed sample-count tables, and a concise per-gene model-summary table.
 
-## Directory layout
-
-- `input_files/` — tab-separated relative-concentration tables, one file per target gene.
-- `results/` — gene-specific figures, diagnostics, contrast tables, supplementary-figure outputs, sample-size tables, and the all-gene model summary.
-- `RDS/` — saved `ggplot` objects used to assemble the supplementary figure and derive observed sample counts.
-
-Run scripts from `02_Liver_mRNA/`.
-
-## Inputs
-
-Each target gene is supplied as a tab-separated file in `input_files/`. The reusable single-gene script requires that its input path is set before each run:
-
-```r
-file_path <- "input_files/<gene>.tsv"
-```
-
-Required columns are:
-
-- `RC` — precomputed relative concentration, used as the response variable;
-- `diet` — dietary group, with expected labels `Fasted`, `NC`, and `HC`;
-- `day` — sampling day.
-
-A sample identifier is recommended for traceability. Input files can also retain the reference-gene information used to calculate `RC`.
-
- The comparisons are HC versus NC at days 1, 2, 3, 4, 10, 15, and 22.
-
-mRNA values are displayed as relative units normalised to the reference genes `18S rRNA` and `ef1a`, represented by the input `RC` variable.
 
 ## Script order
 
