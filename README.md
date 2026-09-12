@@ -46,8 +46,6 @@ Raw 16S rRNA sequencing reads and raw mass-spectrometry files are not distribute
 - **Proteomics**: the ProteomeXchange/PRIDE accession and public download page will be added upon publication.
 - **Processed matrices, metadata, and publication-ready tables**: •	Requests for further information and resources should be directed to the lead contact, Karine Ricaud (karine.brugirardricaud@univ-pau.fr)
 
-Until publication, this repository remains private and the data are available only to authorised collaborators.
-
 
 ## External reference proteome, custom histone database, and annotation resources
 
@@ -103,5 +101,3 @@ Download the following files from STRING and place them in the relevant analysis
 
 - `STRG0A55HWH.protein.info.v12.0.txt`
 - `110079946.protein.enrichment.terms.v12.0.txt`
-
-Repository DOI, and licence information will be added with the public release accompanying the manuscript.
