@@ -8,40 +8,7 @@ The database combines manually collected candidate H1, H2A, H2B, H3, and H4-rela
 
 These scripts are intended to facilitate sequence collection, source tracking, exact-sequence de-duplication, and FASTA-header formatting. They do **not** provide a fully manually curated, experimentally validated, or exhaustive reference catalogue of rainbow trout histone variants. As rainbow trout is a non-model species with incomplete and sometimes inconsistent histone database annotation, the input sequence set and selection rules can be adapted according to the specific analytical objective.
 
-## Directory structure
 
-```text
-histone_database/
-├── 01_FASTA_MS_HistoneDB/
-│   ├── histone_variants_H1_MS_HistoneDB.fasta
-│   ├── histone_variants_H2A_MS_HistoneDB.fasta
-│   ├── histone_variants_H2B_MS_HistoneDB.fasta
-│   ├── histone_variants_H3_MS_HistoneDB.fasta
-│   ├── histone_variants_H4_MS_HistoneDB.fasta
-│   └── 24_10_08_histone_seq_MS_HistoneDB.fasta
-│
-├── 02_input_files/
-│   ├── 24_10_02_histone_prot_seq_annotation_from_UP000193380.txt
-│   ├── 24_10_02_histone_prot_seq_annotation_from_UP000694395.txt
-│   ├── 24_10_02_histone_prot_seq_annotation_from_RefSEQ_NCBI_USDA_OmykA_1_1.txt
-│   └── 24_10_04_histone_prot_seq_annotation_from_ENSEMBL.txt
-|
-├── histone_alignement/
-│   ├── README.md
-│   ├── pymsaviz.ipynb
-│   ├── H3_alignement.fas
-│   ├── H4_alignement.fas
-│   ├── 20260420_TroutGut_peptides_ions_raw_ab_rank3_msqrob-input.csv
-│   ├── 260418_TroutLiver_H3H4_raw_ab_msqrob_input.csv
-│   └── <dataset-specific output directories>
-│
-├── output_files/
-|
-├── 01_merging_fasta_files_from_MS_HistoneDB_2_0.py
-├── 01_merging_fasta_files_from_MS_HistoneDB_2_0.py
-├── 02_non_redundant_histone_database_from_fasta_files.py
-└── 03_simplify_histones_fasta_header_for_input_Mascot.py
-```
 ## Histone peptide and PTM alignment visualisation
 
 The [`histone_alignement/`](histone_alignement/) subdirectory contains a separate downstream visualisation workflow for histone H3 and H4 peptide coverage and PTM-site annotation.
@@ -51,23 +18,6 @@ It uses the peptide-level input tables prepared for the midgut and liver msqrobP
 This alignment workflow does not modify the Mascot search database, infer histone variants, or independently assign PTM coordinates. Peptide conservation and canonical human-reference PTM-site annotation were manually verified before generating these figures.
 
 See the [dedicated alignment-workflow README](histone_alignement/README.md) for its inputs, prior annotation procedure, alignment generation, notebook workflow, outputs, and reproducibility information.
-
-
-## Input sequence resources
-
-Candidate histone sequences were manually selected before this workflow from the following rainbow trout protein resources:
-
-| Source | Input file |
-|---|---|
-| UniProt reference proteome `UP000193380` | `02_input_files/24_10_02_histone_prot_seq_annotation_from_UP000193380.txt` |
-| UniProt proteome `UP000694395` | `02_input_files/24_10_02_histone_prot_seq_annotation_from_UP000694395.txt` |
-| NCBI RefSeq, USDA OmykA_1.1 | `02_input_files/24_10_02_histone_prot_seq_annotation_from_RefSEQ_NCBI_USDA_OmykA_1_1.txt` |
-| Ensembl, USDA OmykA_1.1 | `02_input_files/24_10_04_histone_prot_seq_annotation_from_ENSEMBL.txt` |
-| MS HistoneDB 2.0 | `01_FASTA_MS_HistoneDB/24_10_08_histone_seq_MS_HistoneDB.fasta` |
-
-The files in `02_input_files/` are FASTA-formatted despite using a `.txt` extension.
-
-Manual selection of histone candidates from the complete rainbow trout proteome resources occurred before this workflow. This extraction step is not automated by the scripts in this directory.
 
 ## Workflow
 
