@@ -4,38 +4,6 @@
 
 This module analyses body weight, plasma glucose, hepatosomatic index (HSI), plasma L-lactate, and plasma D-lactate in rainbow trout across dietary treatment and sampling day. It also provides pooled cross-trait Spearman correlations, descriptive day-specific coefficient-of-variation (CV) comparisons, and observed sample-size tables.
 
-## Directory layout
-
-- `input_files/` — tab-separated input tables for each physiological trait.
-- `results/` — trait-specific modelling outputs and secondary analyses.
-- `RDS/` — saved final `ggplot` objects, including the processed data used for the published trait panels.
-
-Run all scripts from `01_Host_Physiological_Traits/`.
-
-## Inputs
-
-Place the following tab-separated files in `input_files/`:
-
-- `body_weight.tsv`
-- `plasma_glucose.tsv`
-- `hepatosomatic_index.tsv`
-- `plasma_llactate.tsv`
-- `plasma_dlactate.tsv`
-
-All trait tables require, at minimum, a diet variable (`diet`) and sampling-day variable (`day`).
-
-Expected trait columns are:
-
-| File | Modelled variable | Additional preprocessing |
-|---|---|---|
-| `body_weight.tsv` | `body_weight` | None |
-| `plasma_glucose.tsv` | `plasma_glucose` | Calculated as the row mean of `replicate_1`, `replicate_2`, and `replicate_3` |
-| `hepatosomatic_index.tsv` | `HSI` | None |
-| `plasma_llactate.tsv` | `Plasma_L_Lactate` | None |
-| `plasma_dlactate.tsv` | `Plasma_D_Lactate` | Values are multiplied by 1,000 before trait-specific modelling and plotting, yielding µM |
-
-Sampling days are ordered as: day 1, 2, 3, 4, 10, 15, and 22. `NC` is the reference diet level in all trait models.
-
 ## Script order
 
 Run the five trait-specific scripts first, as they generate the saved plot objects required by the CV and sample-size scripts.
