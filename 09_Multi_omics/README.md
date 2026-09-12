@@ -34,94 +34,6 @@ Each molecular layer is processed and quality-controlled in its corresponding an
 
 Host physiological traits and global liver cytosine-composition variables are **not MOFA views**. They are retained as sample metadata and used to help interpret factor scores.
 
-## Directory layout
-
-- `input_files/` — processed omics matrices, experiment metadata, and host-trait source tables required to reproduce the integration.
-- `metadata_for_omics_data.rds` — assembled design metadata, host traits, and liver cytosine-composition variables.
-- `views.rds` — final feature-wise z-scored MOFA input matrices (`features × samples`).
-- `views_not_zscored_for_MultiPower.rds` — aligned, filtered matrices before feature-wise z-scoring; used only by `07_MultiPower.R`.
-- `covariates.rds` — aligned sample metadata used by MOFA and MultiGroupPower.
-- `QC_views/` — independent input quality-control tables and plots.
-- `mofa_models/` — trained MOFA HDF5 model files and session information.
-- `elbo_mofa_models/` — ELBO and factor-reproducibility comparisons across trained models.
-- `mofa_results/` — MOFA interpretation, overview, and enrichment outputs.
-- `MultiGroupPower/` — equal-size and unequal-size retrospective multi-omics power outputs.
-
-Run scripts from `09_Multi_omics/` so their relative paths resolve correctly.
-
-## Required inputs
-
-### Experiment metadata and host-trait source tables
-
-`01_metadata_for_omics_preprocess_dataset.R` reads:
-
-```text
-input_files/STPN2309_metadata_all.tsv
-input_files/plasma_glucose.tsv
-input_files/plasma_dlactate.tsv
-input_files/plasma_llactate.tsv
-input_files/body_weight.tsv
-input_files/hepatosomatic_index.tsv
-input_files/methylome_for_dirichlet.tsv
-```
-
-The metadata export retains:
-
-```text
-day_categ
-diet
-group
-phase
-diet_phase
-```
-
-It also assembles the following sample-level covariates:
-
-```text
-plasma_glucose
-HSI
-body_weight
-plasma_DLactate
-plasma_LLactate
-dC_rel
-mdC_rel
-hmdC_rel
-```
-
-For plasma glucose, replicate columns beginning with `replicate_` are averaged within sample.
-
-### Processed omics matrices
-
-`02_data_preparation_for_mofa.R` and `03_QC_views.R` expect:
-
-```text
-input_files/H3_H4_5PTM_midgut_batch_corrected_limma.rds
-input_files/H3_H4_8PTM_liver_batch_corrected_limma.rds
-input_files/midgut_proteome_filtered_batch_corrected_limma.rds
-input_files/liver_proteome_filtered_batch_corrected_limma.rds
-input_files/digesta_ASVbest_sample_by_feature.rds
-input_files/mucus_ASVbest_sample_by_feature.rds
-```
-
-The hPTM and proteome RDS files contain named list objects. The scripts extract:
-
-```text
-ptm_batch_corrected_limma
-proteome_batch_corrected_limma
-```
-
-respectively.
-
-### STRING annotation resources
-
-MOFA protein-weight interpretation and functional enrichment require two external STRING v12 rainbow trout files:
-
-```text
-STRG0A55HWH.protein.info.v12.0.txt
-110079946.protein.enrichment.terms.v12.0.txt
-```
-
-They are not committed because they are large external annotation resources. Download them from the [STRING v12 rainbow trout organism page](https://version-12-0.string-db.org/organism/STRG0A55HWH) and place them in `09_Multi_omics/`.
 
 ## Script order
 
@@ -372,13 +284,6 @@ Argelaguet, R., Arnol, D., Bredikhin, D., et al. (2020). MOFA+: a statistical fr
 
 
 ## 9. Retrospective multi-omics power analysis
-
-`07_MultiPower.R` uses the following input objects:
-
-```text
-views_not_zscored_for_MultiPower.rds
-covariates.rds
-```
 
 The analysis is performed directly on the six assay-specific data matrices and does not use MOFA factors or factor scores.
 
