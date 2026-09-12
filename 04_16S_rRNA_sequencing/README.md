@@ -24,16 +24,11 @@ PGTB is part of the INRAE Genomics Research Infrastructure and the France Génom
 
 ## Data availability and requirements
 
-Raw sequencing reads are not stored in this Git repository. The ENA study accession and public download page will be added before public release.
+Raw sequencing reads are not stored in this Git repository. The European Nucleotide Archive (ENA) under study accession PRJEB126088 will be made publicly available upon publication.
 
 The QIIME2 workflow requires demultiplexed paired-end reads in the format specified in `qiime2_pipeline.sh`, a QIIME2-compatible metadata file, and a QIIME2 2024.10 amplicon environment with the required plugins. The workflow uses QIIME2, DADA2, Cutadapt, RESCRIPt, FastQC, MultiQC, and SILVA 138.2 SSU NR99 resources.
 
 Before rerunning the workflow, inspect the paths, input file names, available cores, and software environment specified in the scripts.
-
-
-## Global raw-read QC
-
-`QC/` contains the global read-quality reports supplied or generated immediately after sequencing. Forward (`R1`) and reverse (`R2`) reads are reported separately. These reports document the quality of the unprocessed sequencing output and are distinct from the trimming checks performed during the QIIME2 workflow.
 
 
 ## QIIME2 workflow
@@ -44,17 +39,6 @@ Before rerunning the workflow, inspect the paths, input file names, available co
 - `qiime2/python_script_fastaQC_report.py` — helper script for per-sample FastQC reporting of exported reads during trimming checks.
 - `qiime2/python_script_multiQC_report.py` — helper script that aggregates FastQC outputs into global forward- and reverse-read MultiQC reports during trimming checks.
 
-### Retained QIIME2 summaries and key files
-
-Selected lightweight `.qzv` visualisations and exported tables are retained to document key decisions. QIIME2 `.qzv` files can be opened interactively with [QIIME2 View](https://view.qiime2.org/).
-
-- `data_import_summary/` — read-import and demultiplexing summaries.
-- `trimming-cutadapt_summary/` — summaries of sequential primer, adapter, homopolymer-tail, minimum-length, and quality trimming.
-- `denoising_dada2_summary/` — DADA2 denoising statistics and key feature-table and representative-sequence summaries.
-- `decontam_summary/` — contamination-identification and filtering summaries for digesta, mucus, and feed-control samples.
-- `silva-138.2-SSU-NR99_classifier_taxonomy/` — final exported ASV-level taxonomy table produced with the SILVA 138.2 SSU NR99 classifier. The table contains `Feature ID`, `Taxon`, and classifier `Confidence`.
-
-Large raw FASTQ files, exported intermediate FASTQ directories, large `.qza` artifacts, and full reference resources are not versioned.
 
 ### Processing steps
 
@@ -103,37 +87,6 @@ BIRDMAn was used for ASV-level Bayesian differential-abundance analysis. Separat
 
 Unlike the `SingleFeatureModel approach`, which fits an independent model for each ASV, `TableModel` fits the complete ASV count table in a single joint Stan model. Thus, all ASVs are analysed within one model invocation, while retaining ASV-specific parameters (including abundance effects and dispersion).
 
-##### Count likelihood
-
-For sample `n` and ASV `i`, raw counts are modelled with a negative-binomial type 2 likelihood on the log scale:
-
-`y[n, i] ~ neg_binomial_2_log(eta[n, i] + log(L[n]), phi[i])`
-
-where `L[n]` is the sample library size and is included as a log-depth offset. `eta[n, i]` is the ASV-specific linear predictor, and `phi[i]` is the feature-specific NB2 precision parameter, with `phi[i] = 1 / alpha[i]`, where `alpha[i]` denotes overdispersion.
-
-##### Baseline-abundance priors
-
-Baseline intercept/bias priors were empirically calibrated from the log-proportion distributions of the filtered digesta and mucus ASV tables. In both compartments, the estimated centre and spread were close to `-5.5` and `1.5`, respectively, closely matching the values discussed in [q2-matchmaker issue #24](https://github.com/flatironinstitute/q2-matchmaker/issues/24).
-
-Accordingly, baseline abundance terms in both models use the informative prior:
-
-`beta_0 ~ normal(-5.5, 1.5)`
-
-This specification is supported by the observed distributions in the present datasets and avoids an unrealistic prior assumption that baseline microbiota log-proportions are centred at zero. Regression coefficients for diet, day, and diet-by-day effects remain zero-centred, representing no prior directional biological effect.
-
-##### Dispersion initialization
-
-Following guidance from a BIRDMAn developer in [issue #102](https://github.com/biocore/BIRDMAn/issues/102), feature-specific NB2 precision parameters were initialized from the empirical mean–variance relationship of the filtered ASV count table.
-
-Raw ASV-level overdispersion estimates were calculated and smoothed using a DESeq2-style parametric mean–dispersion trend:
-
-`alpha(mu) = a0 + a1 / mu`
-
-where `mu` is the mean ASV count and `alpha` is NB2 overdispersion. Fitted positive dispersion values were then inverted to derive ASV-specific initial values for the Stan precision parameter:
-
-`inv_disp_init[i] = 1 / alpha_fitted[i]`
-
-This provides plausible feature-specific starting values and reduces the risk of unstable initialization near zero for the NB2 precision parameter. The DESeq2-style trend is used here for initialization of the custom BIRDMAn model, not for DESeq2 differential-abundance testing.
 
 ##### Experimental design and compositional parameterisation
 
@@ -146,7 +99,7 @@ Posterior coefficient arrays are subsequently centred to CLR coordinates before 
 Filtering is compartment specific:
 
 - Digesta: ASVs present in at least 20% of retained samples.
-- Mucus: ASVs present in at least 10% of retained samples.
+- Mucus: ASVs present in at least 20% of retained samples.
 
 ##### Model comparison, diagnostics, and reporting
 
