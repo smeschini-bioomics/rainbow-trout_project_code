@@ -42,16 +42,16 @@ Most major scripts write a `sessionInfo.txt` file into their output directory. T
 
 Raw 16S rRNA sequencing reads and raw mass-spectrometry files are not distributed through GitHub.
 
-- **16S rRNA gene sequencing**: the ENA study accession and public download page will be added upon release.
-- **Proteomics**: the ProteomeXchange/PRIDE accession and public download page will be added upon release.
-- **Processed matrices, metadata, and publication-ready tables**: release location and DOI will be added with the public version of this repository.
+- **16S rRNA gene sequencing**: The European Nucleotide Archive (ENA) under study accession PRJEB126088 and will be made publicly available upon publication.
+- **Proteomics**: the ProteomeXchange/PRIDE accession and public download page will be added upon publication.
+- **Processed matrices, metadata, and publication-ready tables**: •	Any additional information required to reanalyze the data reported in the associated publication is available from the lead contact upon request.
 
 Until publication, this repository remains private and the data are available only to authorised collaborators.
 
 
 ## External reference proteome, custom histone database, and annotation resources
 
-Large external FASTA resources, STRING annotation files, and the historical custom histone FASTA used for hPTM identification are not committed to this repository. They are available through the associated Zenodo archive: DOI `XXXXX`.
+Large external FASTA resources, STRING annotation files, and the historical custom histone FASTA used for hPTM identification are not committed to this repository.
 
 ### UniProt reference proteome
 
